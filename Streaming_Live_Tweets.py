@@ -5,10 +5,16 @@ from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 
-#twitter_credentials is a python file that contains my twitter API keys
-import twitter_credentials
+from textblob import TextBlob #for sentiment analysis
 
-#Twitter API Client
+import twitter_credentials #twitter_credentials is a python file that contains my twitter API keys
+import numpy as np
+import pandas as pd
+import re #regular expression
+import matplotlib.pyplot as plt
+
+
+#Twitter API Client and the different functionalities
 class Twitter_client():
 
     def __init__(self, twitter_user=None):#None defaults to getting tweets from your own timeline
@@ -17,6 +23,9 @@ class Twitter_client():
 
         #Allow person of this code to specificy a user to get timeline tweets from
         self.twitter_user = twitter_user
+    
+    def get_twitter_client_api(self):
+        return self.twitter_client
 
 
     def get_user_timeline_tweets(self, num_tweets):
@@ -65,7 +74,7 @@ class TwitterStreamer():
 
 class Twitter_Listener(StreamListener):
     '''
-    This ia a basic listener class that just captures and stores/write all tweets into a json file
+    This ia a basic listener class that just captures and stores/write all tweets into a file
     '''
     def __init__(self, fetched_tweet_filename):
         self.fetched_tweet_filename = fetched_tweet_filename
@@ -85,17 +94,74 @@ class Twitter_Listener(StreamListener):
             return False
         print(status)
 
-if __name__ =='__main__':
 
-    hash_tag_list = ['donald trump', 'hillary clinton', 'bernie sanders']
-    fetched_tweet_filename = 'tweets.txt' #prefer json, it's easier to deal with this format but you can choose other format
+class Tweet_Analyzer():
+    '''
+    Functionality for analyzing and categorizing content from tweets.
+    '''
+    def clean_tweet(self, tweet):
+        #to remove all special characters/hyperlinks from tweets then return the results of the clean tweets
+        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet).split())
 
-    twitter_client = Twitter_client('PyData')
-    print(twitter_client.get_user_timeline_tweets(1))
+    def analyze_sentiment(self, tweet):
+        analysis = TextBlob(self.clean_tweet(tweet))
+
+        if analysis.sentiment.polarity > 0: #polarity which tells if a tweet is positive or negative in nature.
+            return 1 #1 stands for 'Positive tweet'
+        elif analysis.sentiment.polarity ==0:
+            return 0 #0 stands for 'Neutral tweet'
+        else:
+            return -1 #-1 stands for negative tweet
+
+    def tweets_to_data_frame(self, tweets):
+        df = pd.DataFrame(data=[tweet.text for tweet in tweets], columns=['tweets'])
+        
+        df['id'] = np.array([tweet.id for tweet in tweets])
+        df['len'] = np.array([len(tweet.text) for tweet in tweets])
+        df['date'] = np.array([tweet.created_at for tweet in tweets])
+        df['source'] = np.array([tweet.source for tweet in tweets]) #device used to tweet
+        df['likes'] = np.array([tweet.favorite_count for tweet in tweets])
+        df['retweets'] = np.array([tweet.retweet_count for tweet in tweets])
+        
+        return df
+
+
+if __name__ == '__main__':
+
+    twitter_client = Twitter_client()
+    tweet_analyzer = Tweet_Analyzer()
+
+    api = twitter_client.get_twitter_client_api()
+
+    tweets = api.user_timeline(screen_name = 'Zuku_WeCare', count=200)
+    df = tweet_analyzer.tweets_to_data_frame(tweets)
+    df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
+    print(df.head(10))
+    #print(dir(tweets[0])) #tweet info directory i.e all types of features we can get from a tweet
+
+#Get average length over all tweets.
+    #print (np.mean(df['len']))
+#Tweet that received the most likes
+    #print(np.max(df['likes']))
+#Tweet that received the most retweets
+    #print(np.max(df['retweets']))
+
+
+#Time series - Visualizing tweet data
+    #time_retweets = pd.Series(data=df['retweets'].values, index=df['date'])
+    #time_retweets.plot(figsize=(16,4), label = 'retweets', legend= True)
+    
+    #time_likes = pd.Series(data=df['likes'].values, index=df['date'])
+    #time_likes.plot(figsize=(16,4), label = 'likes', legend= True)
+
+    #plt.show()
+
+
+    #hash_tag_list = ['safaricom', 'mpesa', 'data bundles']
+    #fetched_tweet_filename = 'tweets.csv' 
+
+    #twitter_client = Twitter_client('Safaricom_Care')
+    #print(twitter_client.get_user_timeline_tweets(1))
     #twitter_streamer = TwitterStreamer()
     #twitter_streamer.stream_tweets(fetched_tweet_filename, hash_tag_list)
     
-
-    
-
-
