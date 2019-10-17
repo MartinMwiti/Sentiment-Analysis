@@ -46,6 +46,7 @@ class Twitter_client():
             home_timeline_tweets.append(tweets)
         return home_timeline_tweets
 
+    
 #Twitter Authenticator
 class Twitter_Authenticator():
 
@@ -156,7 +157,7 @@ if __name__ == '__main__':
 
     #plt.show()
 
-
+    
     #hash_tag_list = ['safaricom', 'mpesa', 'data bundles']
     #fetched_tweet_filename = 'tweets.csv' 
 
