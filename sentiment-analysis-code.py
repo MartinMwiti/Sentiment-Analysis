@@ -57,10 +57,9 @@ class Tweet_Analyzer():
             return -1  # -1 stands for negative tweet
 
     def tweets_to_data_frame(self, tweets):
-        df = pd.DataFrame(
-            data=[tweet.text for tweet in tweets], columns=['tweets'])
+        df = pd.DataFrame(data=[tweet.text for tweet in tweets], columns=['tweets'])
 
-        df['id'] = np.array([tweet.id for tweet in tweets])
+        #df['id'] = np.array([tweet.id for tweet in tweets])
         df['len'] = np.array([len(tweet.text) for tweet in tweets])
         df['date'] = np.array([tweet.created_at for tweet in tweets])
         # device used to tweet
@@ -80,12 +79,13 @@ if __name__ == '__main__':
 
     #tweets = api.user_timeline(screen_name='Zuku_WeCare', count=200)
 #q will represent Specific hashtags of interest. It can mean company product or service.     
-    tweets = api.search(q='kplc', count=200) #I'll use any comments that involves kplc that contains different sentiments
+    # I'll use any comments that involves kplc that contains different sentiments
+    tweets = api.search(q=['kplc', 'lights'], count=200)
     df = tweet_analyzer.tweets_to_data_frame(tweets)
     df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
     print(df.head(10))
 
-    #Time series - Visualizing tweet data
+        #Time series - Visualizing tweet data
     time_sentiment = pd.Series(data=df['sentiment'].values, index=df['date'])
     time_sentiment.plot(figsize=(16, 4), label='sentiment', legend=True)
 
